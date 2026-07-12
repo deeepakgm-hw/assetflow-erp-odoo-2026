@@ -41,8 +41,9 @@ class DepartmentsController {
   update = async (req, res, next) => {
     try {
       const { id } = req.params;
+      const idInt = parseInt(id);
       const { name, parentDepartmentId, headId } = req.body;
-      const dept = await departmentsService.updateDepartment(id, { name, parentDepartmentId, headId });
+      const dept = await departmentsService.updateDepartment(idInt, { name, parentDepartmentId, headId });
 
       // Log activity
       await logActivity({
@@ -65,20 +66,21 @@ class DepartmentsController {
   delete = async (req, res, next) => {
     try {
       const { id } = req.params;
-      await departmentsService.deleteDepartment(id);
+      const idInt = parseInt(id);
+      await departmentsService.deleteDepartment(idInt);
 
       // Log activity
       await logActivity({
         userId: req.user.id,
-        action: `Deleted department with ID: ${id}`,
+        action: `Deleted department with ID: ${idInt}`,
         entityType: "Department",
-        entityId: id
+        entityId: idInt
       });
 
       return res.status(200).json({
         success: true,
         message: "Department deleted successfully",
-        data: { id }
+        data: { id: idInt }
       });
     } catch (error) {
       next(error);
@@ -88,8 +90,9 @@ class DepartmentsController {
   updateStatus = async (req, res, next) => {
     try {
       const { id } = req.params;
+      const idInt = parseInt(id);
       const { status } = req.body;
-      const dept = await departmentsService.updateStatus(id, status);
+      const dept = await departmentsService.updateStatus(idInt, status);
 
       // Log activity
       await logActivity({
@@ -112,8 +115,9 @@ class DepartmentsController {
   updateHead = async (req, res, next) => {
     try {
       const { id } = req.params;
+      const idInt = parseInt(id);
       const { headId } = req.body;
-      const dept = await departmentsService.updateHead(id, headId);
+      const dept = await departmentsService.updateHead(idInt, headId);
 
       // Log activity
       await logActivity({

@@ -22,8 +22,12 @@ const createCategoryValidation = [
     .withMessage("Category name is required"),
   body("customFields")
     .optional({ nullable: true })
-    .isObject()
-    .withMessage("customFields must be a JSON object"),
+    .custom((val) => {
+      if (typeof val !== "object" || val === null) {
+        throw new Error("customFields must be a JSON object or array");
+      }
+      return true;
+    }),
   handleValidationErrors
 ];
 
@@ -39,8 +43,12 @@ const updateCategoryValidation = [
     .withMessage("Category name cannot be empty"),
   body("customFields")
     .optional({ nullable: true })
-    .isObject()
-    .withMessage("customFields must be a JSON object"),
+    .custom((val) => {
+      if (typeof val !== "object" || val === null) {
+        throw new Error("customFields must be a JSON object or array");
+      }
+      return true;
+    }),
   handleValidationErrors
 ];
 
