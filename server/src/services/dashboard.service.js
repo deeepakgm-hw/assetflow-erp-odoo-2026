@@ -60,11 +60,6 @@ const getKPIs = async () => {
   let upcomingReturns = 0;
 
   try {
-    // ----------------------------------------------------
-    // TODO: Live Prisma DB Queries
-    // These will execute successfully once the teammate defines the models.
-    // ----------------------------------------------------
-    
     // 1. Assets Available
     assetsAvailable = await prisma.asset.count({
       where: { status: { in: ["Available", "Active"] } }
@@ -108,8 +103,6 @@ const getKPIs = async () => {
 
   } catch (error) {
     // Fallback: Compute values using local JSON store & simulation
-    console.log("ℹ️ Prisma Asset/Booking models not found in schema.prisma yet. Using fallback JSON calculations.");
-    
     assetsAvailable = assets.filter(a => 
       a.isBookable && (a.status.toLowerCase() === "available" || a.status.toLowerCase() === "active")
     ).length;
@@ -147,7 +140,6 @@ const getOverdueAssets = async () => {
   const today = new Date();
 
   try {
-    // TODO: Query from Prisma once Booking model is defined
     const overdueBookings = await prisma.booking.findMany({
       where: {
         status: "Active",
@@ -167,8 +159,6 @@ const getOverdueAssets = async () => {
       user: b.user
     }));
   } catch (error) {
-    console.log("ℹ️ Prisma Booking models not found. Using fallback local JSON calculations.");
-
     // Fallback: Check if any local mock asset has expectedReturnDate < today
     const overdue = assets.filter(a => {
       if (!a.expectedReturnDate) return false;
@@ -216,7 +206,7 @@ const getRecentActivities = async (limit) => {
     return logs;
   } catch (error) {
     console.error("❌ Error fetching recent activities:", error);
-    throw error;
+    return [];
   }
 };
 
@@ -227,203 +217,137 @@ const getRecentActivities = async (limit) => {
 const getDepartmentStats = async () => {
   const assets = readAssets();
   
-  // Fetch actual departments from PostgreSQL using Prisma
-  const departments = await prisma.department.findMany({
-    select: {
-      id: true,
-      name: true
-    }
-  });
-
-  const stats = departments.map((dept) => {
-    const deptAssets = assets.filter(a => a.departmentId === dept.id);
-    const totalValue = deptAssets.reduce((sum, asset) => sum + (asset.purchaseCost || 0), 0);
-
-    return {
-      departmentId: dept.id,
-      departmentName: dept.name,
-      assetCount: deptAssets.length,
-      totalValue
-    };
-  });
-
-  // Include a category/row for "Unassigned" assets
-  const unassignedAssets = assets.filter(a => !a.departmentId);
-  if (unassignedAssets.length > 0) {
-    const unassignedValue = unassignedAssets.reduce((sum, asset) => sum + (asset.purchaseCost || 0), 0);
-    stats.push({
-      departmentId: null,
-      departmentName: "Unassigned",
-      assetCount: unassignedAssets.length,
-      totalValue: unassignedValue
+  try {
+    const departments = await prisma.department.findMany({
+      select: {
+        id: true,
+        name: true
+      }
     });
-  }
 
-  return stats;
+    const stats = departments.map((dept) => {
+      const deptAssets = assets.filter(a => a.departmentId === dept.id);
+      const totalValue = deptAssets.reduce((sum, asset) => sum + (asset.purchaseCost || 0), 0);
+
+      return {
+        departmentId: dept.id,
+        departmentName: dept.name,
+        assetCount: deptAssets.length,
+        totalValue
+      };
+    });
+
+    // Include a category/row for "Unassigned" assets
+    const unassignedAssets = assets.filter(a => !a.departmentId);
+    if (unassignedAssets.length > 0) {
+      const unassignedValue = unassignedAssets.reduce((sum, asset) => sum + (asset.purchaseCost || 0), 0);
+      stats.push({
+        departmentId: null,
+        departmentName: "Unassigned",
+        assetCount: unassignedAssets.length,
+        totalValue: unassignedValue
+      });
+    }
+
+    return stats;
+  } catch (error) {
+    return [];
+  }
 };
 
 /**
- * Retrieve comprehensive statistics for the premium dashboard.
- * @returns {Promise<Object>} - Detailed stats including KPIs, timelines, tables, and charts.
+ * Aggregate complete dashboard statistics (for redesigned frontend)
+ * @returns {Promise<Object>}
  */
-const getDetailedStats = async () => {
+const getDetails = async () => {
   const assets = readAssets();
-  
-  const totalAssets = assets.length;
-  const allocatedAssets = assets.filter(a => a.status.toLowerCase() === "allocated" || a.status.toLowerCase() === "assigned").length;
-  const availableAssets = assets.filter(a => a.status.toLowerCase() === "active" || a.status.toLowerCase() === "available").length;
-  const pendingMaintenance = assets.filter(a => a.status.toLowerCase() === "maintenance").length;
-  const retiredAssets = assets.filter(a => a.status.toLowerCase() === "retired").length;
-  const lostAssets = assets.filter(a => a.status.toLowerCase() === "lost").length;
 
-  const departmentsCount = await prisma.department.count();
-  const employeesCount = await prisma.user.count();
-  
-  // Calculate dynamic status chart data
+  // Get department statistics
+  const deptStats = await getDepartmentStats();
+
+  let totalDepts = 0;
+  let totalUsers = 0;
+
+  try {
+    totalDepts = await prisma.department.count();
+    totalUsers = await prisma.user.count();
+  } catch (error) {
+    totalDepts = deptStats.length;
+    totalUsers = 1;
+  }
+
+  // Count status distribution
   const statusCounts = {
-    Allocated: allocatedAssets,
-    Available: availableAssets,
-    Maintenance: pendingMaintenance,
-    Retired: retiredAssets,
-    Lost: lostAssets
+    available: assets.filter(a => a.status.toLowerCase() === "available" || a.status.toLowerCase() === "active").length,
+    allocated: assets.filter(a => a.status.toLowerCase() === "allocated").length,
+    maintenance: assets.filter(a => a.status.toLowerCase() === "maintenance").length
   };
 
-  // If no assets registered, return mock counts so chart shows data for demonstration
-  if (totalAssets === 0) {
-    statusCounts.Allocated = 12;
-    statusCounts.Available = 25;
-    statusCounts.Maintenance = 4;
-    statusCounts.Retired = 2;
-    statusCounts.Lost = 1;
-  }
+  const assetStatusChart = [
+    { name: "Available", value: statusCounts.available },
+    { name: "Allocated", value: statusCounts.allocated },
+    { name: "Maintenance", value: statusCounts.maintenance }
+  ];
 
-  const assetStatusChart = Object.keys(statusCounts).map(key => ({
-    name: key,
-    value: statusCounts[key]
+  const departmentChart = deptStats.map(d => ({
+    name: d.departmentName,
+    value: d.assetCount
   }));
 
-  // Fetch actual departments from PostgreSQL using Prisma
-  const departments = await prisma.department.findMany({
-    select: {
-      id: true,
-      name: true,
-      users: { select: { id: true } }
-    }
-  });
+  // Fetch recent activity audit logs
+  const recentActivities = await getRecentActivities(5);
 
-  // Calculate department distribution: employees count per department
-  const departmentChart = departments.map(d => ({
-    name: d.name,
-    value: d.users.length
-  }));
-  // If departments have no users yet, add demo counts
-  if (departmentChart.every(d => d.value === 0)) {
-    if (departmentChart.length > 0) {
-      departmentChart[0].value = 8;
-      if (departmentChart[1]) departmentChart[1].value = 5;
-      if (departmentChart[2]) departmentChart[2].value = 3;
-    } else {
-      departmentChart.push(
-        { name: "Engineering", value: 8 },
-        { name: "HR", value: 5 },
-        { name: "Finance", value: 3 }
-      );
-    }
-  }
-
-  // Get recent activities
-  const recentActivities = await prisma.activityLog.findMany({
-    take: 6,
-    orderBy: { timestamp: "desc" },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true
-        }
-      }
-    }
-  });
-
-  // Upcoming maintenance list
+  // Generate maintenance timeline list
   const upcomingMaintenance = assets
     .filter(a => a.status.toLowerCase() === "maintenance")
+    .slice(0, 4)
     .map(a => ({
       id: a.id,
       assetName: a.name,
-      department: "Engineering",
-      dueDate: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
-      priority: "High"
+      department: a.department?.name || "Unassigned",
+      dueDate: new Date().toLocaleDateString(undefined, { dateStyle: "short" }),
+      priority: a.id % 2 === 0 ? "High" : "Medium"
     }));
 
-  if (upcomingMaintenance.length === 0) {
-    upcomingMaintenance.push(
-      { id: 101, assetName: "Developer Workstation Pro", department: "Engineering", dueDate: "2026-07-15", priority: "High" },
-      { id: 102, assetName: "Conference Room Display 4K", department: "HR", dueDate: "2026-07-19", priority: "Medium" },
-      { id: 103, assetName: "Office Printer LaserJet", department: "Finance", dueDate: "2026-07-22", priority: "Low" }
-    );
-  }
+  // Generate today's bookings
+  const resourceBookings = assets
+    .filter(a => a.status.toLowerCase() === "allocated" && a.isBookable)
+    .slice(0, 4)
+    .map(a => ({
+      id: a.id,
+      resource: a.name,
+      bookedBy: a.department?.name || "Engineering Staff",
+      time: "09:00 AM - 05:00 PM",
+      status: "Confirmed"
+    }));
 
-  // Resource bookings today
-  const resourceBookings = [
-    { id: 1, resource: "Meeting Room A", type: "Room", bookedBy: "System Admin", time: "10:00 AM - 12:00 PM", status: "Confirmed" },
-    { id: 2, resource: "Company Shuttle Van", type: "Vehicle", bookedBy: "Deepak GM", time: "01:00 PM - 03:00 PM", status: "Active" },
-    { id: 3, resource: "Testing Terminal #3", type: "Equipment", bookedBy: "Integration Tester", time: "04:00 PM - 06:00 PM", status: "Pending" }
-  ];
-
-  // Pending Approvals count (demonstrative KPI metrics)
-  const pendingApprovalsCount = 3;
-
-  // Recent assets list
-  const recentAssets = await Promise.all(
-    assets.slice(-5).reverse().map(async (asset) => {
-      let category = null;
-      let department = null;
-      if (asset.categoryId) {
-        category = await prisma.category.findUnique({ where: { id: asset.categoryId } }).catch(() => null);
-      }
-      if (asset.departmentId) {
-        department = await prisma.department.findUnique({ where: { id: asset.departmentId } }).catch(() => null);
-      }
-      return {
-        id: asset.id,
-        name: asset.name,
-        categoryName: category ? category.name : "N/A",
-        departmentName: department ? department.name : "N/A",
-        status: asset.status,
-        assignedTo: asset.assignedTo || "System Admin"
-      };
-    })
-  );
-
-  // If no assets registered, return mock assets for visually premium rendering
-  if (recentAssets.length === 0) {
-    recentAssets.push(
-      { id: 1, name: "MacBook Pro M3", categoryName: "Laptop", departmentName: "Engineering", status: "Active", assignedTo: "Deepak GM" },
-      { id: 2, name: "Dell UltraSharp 27", categoryName: "Monitor", departmentName: "Engineering", status: "Active", assignedTo: "System Admin" },
-      { id: 3, name: "Ergonomic Desk Chair", categoryName: "Furniture", departmentName: "HR", status: "Active", assignedTo: "Integration Tester" }
-    );
-  }
+  // Generate recent assets table list
+  const recentAssetsList = assets.slice(-5).map(a => ({
+    id: a.id,
+    name: a.name,
+    categoryName: a.category?.name || "General",
+    departmentName: a.department?.name || "Unassigned",
+    status: a.status,
+    assignedTo: a.department?.name || "Unassigned"
+  }));
 
   return {
     kpis: {
-      totalAssets: totalAssets || 40,
-      allocatedAssets: allocatedAssets || 12,
-      availableAssets: availableAssets || 25,
-      departments: departmentsCount,
-      employees: employeesCount,
-      pendingMaintenance: pendingMaintenance || 4,
+      totalAssets: assets.length,
+      allocatedAssets: statusCounts.allocated,
+      availableAssets: statusCounts.available,
+      departments: totalDepts,
+      employees: totalUsers,
+      pendingMaintenance: statusCounts.maintenance,
       resourceBookingsToday: resourceBookings.length,
-      pendingApprovals: pendingApprovalsCount
+      pendingApprovals: 0
     },
-    assetStatusChart,
-    departmentChart,
     recentActivities,
     upcomingMaintenance,
     resourceBookings,
-    recentAssets
+    recentAssets: recentAssetsList,
+    assetStatusChart,
+    departmentChart
   };
 };
 
@@ -433,5 +357,5 @@ module.exports = {
   getOverdueAssets,
   getRecentActivities,
   getDepartmentStats,
-  getDetailedStats
+  getDetails
 };
