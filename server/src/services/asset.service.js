@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const prisma = require("../config/prisma");
 const { logActivity } = require("../utils/activity");
-const { APIError } = require("../middleware/errorHandler");
+const { APIError } = require("../middleware/error.middleware");
 
 const dbPath = path.join(__dirname, "../uploads/assets.json");
 

@@ -1,5 +1,5 @@
 const assetService = require("../services/asset.service");
-const { APIError } = require("../middleware/errorHandler");
+const { APIError } = require("../middleware/error.middleware");
 
 const getAllAssets = async (req, res, next) => {
   try {

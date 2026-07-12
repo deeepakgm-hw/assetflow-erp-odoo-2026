@@ -1,5 +1,5 @@
 const prisma = require("../config/prisma");
-const socketManager = require("../sockets/socket");
+const socketManager = require("../lib/socket");
 
 /**
  * Log an activity to the database and broadcast it to subscribers.
