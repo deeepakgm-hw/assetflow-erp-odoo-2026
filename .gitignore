@@ -4,3 +4,4 @@ client/dist/
 server/src/generated/prisma/
 .env
 .DS_Store
+FETCH_HEAD
