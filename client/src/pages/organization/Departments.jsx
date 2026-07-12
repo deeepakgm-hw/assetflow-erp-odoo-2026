@@ -6,7 +6,8 @@ import Input from "../../components/Input";
 import Modal from "../../components/Modal";
 import Badge from "../../components/Badge";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import SearchBar from "../../components/SearchBar";
+import { Search, Plus, Edit2, Trash2, ShieldAlert } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 
 const Departments = () => {
@@ -34,7 +35,7 @@ const Departments = () => {
       setLoading(true);
       const [deptRes, empRes] = await Promise.all([
         departmentService.getAll(),
-        employeeService.getAll({ limit: 100 }), // Fetch employees for head assignment
+        employeeService.getAll({ limit: 100 }),
       ]);
       setDepartments(deptRes.data || []);
       setEmployees(empRes.data?.employees || []);
@@ -153,89 +154,107 @@ const Departments = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <SearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Search by name or code..."
-          className="max-w-xs"
-        />
-        <Button onClick={handleCreateOpen} className="w-full sm:w-auto">
-          Create Department
-        </Button>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-900/20 p-3 rounded-2xl border border-zinc-850">
+        <div className="relative w-full max-w-xs">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search className="h-4 w-4 text-zinc-500" />
+          </span>
+          <input
+            type="text"
+            placeholder="Search departments..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs bg-zinc-950/80 border border-zinc-800 focus:border-blue-500/50 rounded-xl text-zinc-250 placeholder-zinc-650 focus:outline-none transition-all"
+          />
+        </div>
+        <button
+          onClick={handleCreateOpen}
+          className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-550 rounded-xl flex items-center justify-center space-x-1.5 transition-colors shadow-lg shadow-blue-600/10"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Create Department</span>
+        </button>
       </div>
 
       {/* Departments Table */}
-      <div className="overflow-x-auto border border-zinc-800/80 rounded-xl bg-zinc-900/20">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto border border-zinc-850 rounded-2xl bg-zinc-900/10 shadow-lg">
+        <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-900/50">
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Code</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Name</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Parent</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Head</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Status</th>
-              <th className="px-6 py-4 text-xs font-semibold tracking-wider text-zinc-400 text-right">Actions</th>
+            <tr className="border-b border-zinc-800 text-zinc-500 uppercase text-[9px] font-bold tracking-wider">
+              <th className="px-6 py-3.5">Code</th>
+              <th className="px-6 py-3.5">Name</th>
+              <th className="px-6 py-3.5">Parent Department</th>
+              <th className="px-6 py-3.5">Head Assignment</th>
+              <th className="px-6 py-3.5">Status</th>
+              <th className="px-6 py-3.5 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800/60">
+          <tbody className="divide-y divide-zinc-850/40">
             {loading ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
-                  Loading departments...
+                  <span className="h-5 w-5 border-2 border-zinc-800 border-t-blue-500 rounded-full animate-spin inline-block" />
                 </td>
               </tr>
             ) : filteredDepts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
-                  No departments found.
+                <td colSpan={6} className="px-6 py-16 text-center text-zinc-550 font-medium">
+                  No departments matched your query.
                 </td>
               </tr>
             ) : (
               filteredDepts.map((dept) => (
-                <tr key={dept.id} className="hover:bg-zinc-800/10">
-                  <td className="px-6 py-4 font-mono text-sm text-zinc-400">{dept.code}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-zinc-200">{dept.name}</td>
-                  <td className="px-6 py-4 text-sm text-zinc-400">
+                <tr key={dept.id} className="hover:bg-zinc-900/10 transition-colors">
+                  <td className="px-6 py-4 font-mono text-[10px] text-zinc-400">{dept.code}</td>
+                  <td className="px-6 py-4 font-bold text-zinc-200">{dept.name}</td>
+                  <td className="px-6 py-4 text-zinc-400 font-semibold">
                     {dept.parent ? (
-                      <span className="font-semibold text-zinc-350">{dept.parent.name}</span>
+                      <span className="text-zinc-300">{dept.parent.name}</span>
                     ) : (
                       <span className="text-zinc-650 italic">—</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm">
+                  <td className="px-6 py-4">
                     <select
                       value={dept.headId || ""}
                       onChange={(e) => handleHeadAssign(dept.id, e.target.value)}
-                      className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded px-2.5 py-1 text-xs focus:ring-1 focus:ring-blue-500/30"
+                      className="bg-zinc-950/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-lg px-2.5 py-1 text-xs focus:outline-none transition-colors"
                     >
                       <option value="">No Head Assigned</option>
                       {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>
-                          {emp.name} ({emp.email})
+                          {emp.name}
                         </option>
                       ))}
                     </select>
                   </td>
-                  <td className="px-6 py-4 text-sm">
+                  <td className="px-6 py-4">
                     <button
                       onClick={() => handleStatusToggle(dept)}
-                      className="focus:outline-none"
+                      className="focus:outline-none transition-transform hover:scale-95"
                     >
-                      <Badge variant={dept.isActive ? "success" : "danger"}>
+                      <Badge variant={dept.isActive ? "success" : "danger"} className="uppercase tracking-wider text-[8px] font-black">
                         {dept.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </button>
                   </td>
-                  <td className="px-6 py-4 text-sm text-right space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditOpen(dept)}>
-                      Edit
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDeleteOpen(dept)}>
-                      Delete
-                    </Button>
+                  <td className="px-6 py-4 text-right space-x-1.5">
+                    <button
+                      onClick={() => handleEditOpen(dept)}
+                      className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-zinc-450 hover:text-white transition-colors inline-flex items-center"
+                      title="Edit"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteOpen(dept)}
+                      className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-zinc-450 hover:text-red-400 transition-colors inline-flex items-center"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </td>
                 </tr>
               ))
@@ -262,11 +281,11 @@ const Departments = () => {
             required
           />
           <div className="flex flex-col space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Parent Department</label>
+            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Parent Department</label>
             <select
               value={formData.parentId}
               onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
-              className="w-full bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg px-3.5 py-2 text-sm focus:ring-1 focus:ring-blue-500"
+              className="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-zinc-700"
             >
               <option value="">None</option>
               {departments.map((d) => (
@@ -305,15 +324,15 @@ const Departments = () => {
             required
           />
           <div className="flex flex-col space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Parent Department</label>
+            <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Parent Department</label>
             <select
               value={formData.parentId}
               onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
-              className="w-full bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg px-3.5 py-2 text-sm focus:ring-1 focus:ring-blue-500"
+              className="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-zinc-700"
             >
               <option value="">None</option>
               {departments
-                .filter((d) => d.id !== selectedDept?.id) // Prevent parent assignment to self
+                .filter((d) => d.id !== selectedDept?.id)
                 .map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name} ({d.code})

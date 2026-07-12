@@ -4,8 +4,7 @@ import Button from "../../components/Button";
 import Input from "../../components/Input";
 import Modal from "../../components/Modal";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import SearchBar from "../../components/SearchBar";
-import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { Search, Plus, Edit2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 const Categories = () => {
@@ -23,7 +22,6 @@ const Categories = () => {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
-  // Custom fields structure: [{ name: "Warranty", type: "text" }]
   const [customFields, setCustomFields] = useState([]);
 
   const fetchData = useCallback(async () => {
@@ -103,7 +101,6 @@ const Categories = () => {
   };
 
   const formatCustomFieldsPayload = () => {
-    // Return key-value object of valid fields
     const obj = {};
     customFields.forEach((f) => {
       if (f.name.trim()) {
@@ -175,13 +172,13 @@ const Categories = () => {
       const keys = Object.keys(parsed);
       if (keys.length === 0) return <span className="text-zinc-650 italic">None</span>;
       return (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1.5">
           {keys.map((k) => (
             <span
               key={k}
-              className="text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700/80 px-2 py-0.5 rounded font-mono"
+              className="text-[9px] bg-zinc-950 text-zinc-400 border border-zinc-850 px-2 py-0.5 rounded font-mono font-bold"
             >
-              {k}: {parsed[k]}
+              {k}: <span className="text-blue-400 font-extrabold">{parsed[k]}</span>
             </span>
           ))}
         </div>
@@ -198,59 +195,77 @@ const Categories = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <SearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Search by name or code..."
-          className="max-w-xs"
-        />
-        <Button onClick={handleCreateOpen} className="w-full sm:w-auto">
-          Create Category
-        </Button>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-900/20 p-3 rounded-2xl border border-zinc-850">
+        <div className="relative w-full max-w-xs">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search className="h-4 w-4 text-zinc-550" />
+          </span>
+          <input
+            type="text"
+            placeholder="Search categories..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs bg-zinc-950/80 border border-zinc-800 focus:border-blue-500/50 rounded-xl text-zinc-250 placeholder-zinc-650 focus:outline-none transition-all"
+          />
+        </div>
+        <button
+          onClick={handleCreateOpen}
+          className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-550 rounded-xl flex items-center justify-center space-x-1.5 transition-colors shadow-lg shadow-blue-600/10"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Create Category</span>
+        </button>
       </div>
 
       {/* Categories Table */}
-      <div className="overflow-x-auto border border-zinc-800/80 rounded-xl bg-zinc-900/20">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto border border-zinc-850 rounded-2xl bg-zinc-900/10 shadow-lg">
+        <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-900/50">
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Code</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Name</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Description</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Custom fields</th>
-              <th className="px-6 py-4 text-xs font-semibold tracking-wider text-zinc-400 text-right">Actions</th>
+            <tr className="border-b border-zinc-800 text-zinc-550 uppercase text-[9px] font-bold tracking-wider">
+              <th className="px-6 py-3.5">Code</th>
+              <th className="px-6 py-3.5">Name</th>
+              <th className="px-6 py-3.5">Description</th>
+              <th className="px-6 py-3.5">Custom metadata Fields</th>
+              <th className="px-6 py-3.5 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800/60">
+          <tbody className="divide-y divide-zinc-850/40">
             {loading ? (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
-                  Loading categories...
+                  <span className="h-5 w-5 border-2 border-zinc-800 border-t-blue-500 rounded-full animate-spin inline-block" />
                 </td>
               </tr>
             ) : filteredCategories.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
-                  No categories found.
+                <td colSpan={5} className="px-6 py-16 text-center text-zinc-550 font-medium">
+                  No categories matched your query.
                 </td>
               </tr>
             ) : (
               filteredCategories.map((cat) => (
-                <tr key={cat.id} className="hover:bg-zinc-800/10">
-                  <td className="px-6 py-4 font-mono text-sm text-zinc-400">{cat.code}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-zinc-200">{cat.name}</td>
-                  <td className="px-6 py-4 text-sm text-zinc-400 truncate max-w-xs">{cat.description || "—"}</td>
+                <tr key={cat.id} className="hover:bg-zinc-900/10 transition-colors">
+                  <td className="px-6 py-4 font-mono text-[10px] text-zinc-400">{cat.code}</td>
+                  <td className="px-6 py-4 font-bold text-zinc-200">{cat.name}</td>
+                  <td className="px-6 py-4 text-zinc-450 truncate max-w-xs">{cat.description || "—"}</td>
                   <td className="px-6 py-4">{renderCustomFieldsPreview(cat.customFields)}</td>
-                  <td className="px-6 py-4 text-sm text-right space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditOpen(cat)}>
-                      Edit
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDeleteOpen(cat)}>
-                      Delete
-                    </Button>
+                  <td className="px-6 py-4 text-right space-x-1.5">
+                    <button
+                      onClick={() => handleEditOpen(cat)}
+                      className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-zinc-450 hover:text-white transition-colors inline-flex items-center"
+                      title="Edit"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteOpen(cat)}
+                      className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-zinc-450 hover:text-red-400 transition-colors inline-flex items-center"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </td>
                 </tr>
               ))
@@ -269,23 +284,28 @@ const Categories = () => {
           {/* Dynamic Custom Fields editor */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Custom Fields Configuration</label>
-              <Button type="button" variant="outline" size="sm" onClick={handleAddField} className="py-1">
-                <PlusIcon className="h-3 w-3 mr-1" /> Add Field
-              </Button>
+              <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Custom Fields Configuration</label>
+              <button
+                type="button"
+                onClick={handleAddField}
+                className="px-2.5 py-1 text-[10px] font-bold bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-300 rounded-lg flex items-center space-x-1 transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                <span>Add Property</span>
+              </button>
             </div>
             {customFields.map((field, idx) => (
               <div key={idx} className="flex items-center space-x-2">
-                <Input
-                  placeholder="e.g. Warranty"
+                <input
+                  placeholder="Property name (e.g. Warranty)"
                   value={field.name}
                   onChange={(e) => handleFieldChange(idx, e.target.value)}
-                  className="flex-1"
+                  className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none placeholder-zinc-650"
                 />
                 <select
                   value={field.type}
                   onChange={(e) => handleFieldTypeChange(idx, e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg px-2.5 py-2 text-sm focus:ring-1 focus:ring-blue-500"
+                  className="bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-xl px-2.5 py-2 text-xs focus:outline-none"
                 >
                   <option value="text">Text</option>
                   <option value="number">Number</option>
@@ -295,10 +315,10 @@ const Categories = () => {
                 <button
                   type="button"
                   onClick={() => handleRemoveField(idx)}
-                  className="text-zinc-500 hover:text-red-400 p-2 hover:bg-zinc-800 rounded-lg"
+                  className="text-zinc-500 hover:text-red-400 p-2 hover:bg-zinc-900 rounded-xl transition-colors"
                   disabled={customFields.length <= 1}
                 >
-                  <TrashIcon className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             ))}
@@ -325,23 +345,28 @@ const Categories = () => {
           {/* Dynamic Custom Fields editor */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Custom Fields Configuration</label>
-              <Button type="button" variant="outline" size="sm" onClick={handleAddField} className="py-1">
-                <PlusIcon className="h-3 w-3 mr-1" /> Add Field
-              </Button>
+              <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Custom Fields Configuration</label>
+              <button
+                type="button"
+                onClick={handleAddField}
+                className="px-2.5 py-1 text-[10px] font-bold bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-300 rounded-lg flex items-center space-x-1 transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                <span>Add Property</span>
+              </button>
             </div>
             {customFields.map((field, idx) => (
               <div key={idx} className="flex items-center space-x-2">
-                <Input
-                  placeholder="e.g. Processor"
+                <input
+                  placeholder="Property name (e.g. Warranty)"
                   value={field.name}
                   onChange={(e) => handleFieldChange(idx, e.target.value)}
-                  className="flex-1"
+                  className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none placeholder-zinc-650"
                 />
                 <select
                   value={field.type}
                   onChange={(e) => handleFieldTypeChange(idx, e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg px-2.5 py-2 text-sm focus:ring-1 focus:ring-blue-500"
+                  className="bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-xl px-2.5 py-2 text-xs focus:outline-none"
                 >
                   <option value="text">Text</option>
                   <option value="number">Number</option>
@@ -351,10 +376,10 @@ const Categories = () => {
                 <button
                   type="button"
                   onClick={() => handleRemoveField(idx)}
-                  className="text-zinc-500 hover:text-red-400 p-2 hover:bg-zinc-800 rounded-lg"
+                  className="text-zinc-500 hover:text-red-400 p-2 hover:bg-zinc-900 rounded-xl transition-colors"
                   disabled={customFields.length <= 1}
                 >
-                  <TrashIcon className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             ))}

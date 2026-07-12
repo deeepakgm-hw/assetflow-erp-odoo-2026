@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import employeeService from "../../services/employeeService";
 import departmentService from "../../services/departmentService";
-import Button from "../../components/Button";
-import SearchBar from "../../components/SearchBar";
 import Badge from "../../components/Badge";
-import LoadingSpinner from "../../components/LoadingSpinner";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import toast from "react-hot-toast";
 
@@ -111,20 +109,26 @@ const Employees = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Filtering Actions */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <SearchBar
-          value={search}
-          onChange={(val) => {
-            setSearch(val);
-            setPage(1);
-          }}
-          placeholder="Search by name or email..."
-          className="max-w-xs"
-        />
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-zinc-900/20 p-3 rounded-2xl border border-zinc-850">
+        <div className="relative w-full max-w-xs">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search className="h-4 w-4 text-zinc-550" />
+          </span>
+          <input
+            type="text"
+            placeholder="Search operators..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="w-full pl-9 pr-4 py-2 text-xs bg-zinc-950/80 border border-zinc-800 focus:border-blue-500/50 rounded-xl text-zinc-250 placeholder-zinc-650 focus:outline-none transition-all"
+          />
+        </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
           {/* Department Filter */}
           <select
             value={deptFilter}
@@ -132,7 +136,7 @@ const Employees = () => {
               setDeptFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg px-3.5 py-2 text-sm focus:ring-1 focus:ring-blue-500"
+            className="bg-zinc-950/80 border border-zinc-800 text-zinc-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-zinc-700"
           >
             <option value="">All Departments</option>
             {departments.map((d) => (
@@ -149,7 +153,7 @@ const Employees = () => {
               setRoleFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg px-3.5 py-2 text-sm focus:ring-1 focus:ring-blue-500"
+            className="bg-zinc-950/80 border border-zinc-800 text-zinc-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-zinc-700"
           >
             <option value="">All Roles</option>
             <option value="Admin">Admin</option>
@@ -161,41 +165,41 @@ const Employees = () => {
       </div>
 
       {/* Employee Table */}
-      <div className="overflow-x-auto border border-zinc-800/80 rounded-xl bg-zinc-900/20">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto border border-zinc-850 rounded-2xl bg-zinc-900/10 shadow-lg">
+        <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-900/50">
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Name</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Email</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Department</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Role</th>
-              {isAdmin && <th className="px-6 py-4 text-xs font-semibold tracking-wider text-zinc-400 text-right">Actions</th>}
+            <tr className="border-b border-zinc-800 text-zinc-555 uppercase text-[9px] font-bold tracking-wider">
+              <th className="px-6 py-3.5">Name</th>
+              <th className="px-6 py-3.5">Email</th>
+              <th className="px-6 py-3.5">Department</th>
+              <th className="px-6 py-3.5">Role Authorization</th>
+              {isAdmin && <th className="px-6 py-3.5 text-right">Promote operator</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800/60">
+          <tbody className="divide-y divide-zinc-850/40">
             {loading ? (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
-                  <LoadingSpinner size="md" />
+                  <span className="h-5 w-5 border-2 border-zinc-800 border-t-blue-500 rounded-full animate-spin inline-block" />
                 </td>
               </tr>
             ) : employees.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
-                  No employees found.
+                <td colSpan={5} className="px-6 py-16 text-center text-zinc-550 font-medium">
+                  No registered operators matched.
                 </td>
               </tr>
             ) : (
               employees.map((emp) => (
-                <tr key={emp.id} className="hover:bg-zinc-800/10">
-                  <td className="px-6 py-4 text-sm font-semibold text-zinc-200">{emp.name}</td>
-                  <td className="px-6 py-4 text-sm text-zinc-400">{emp.email}</td>
-                  <td className="px-6 py-4 text-sm">
+                <tr key={emp.id} className="hover:bg-zinc-900/10 transition-colors">
+                  <td className="px-6 py-4 font-bold text-zinc-200">{emp.name}</td>
+                  <td className="px-6 py-4 text-zinc-450 font-mono text-[11px]">{emp.email}</td>
+                  <td className="px-6 py-4">
                     {isAdmin ? (
                       <select
                         value={emp.departmentId || ""}
                         onChange={(e) => handleDeptChange(emp.id, e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded px-2.5 py-1 text-xs focus:ring-1 focus:ring-blue-500/30"
+                        className="bg-zinc-950/80 border border-zinc-800 text-zinc-300 rounded-lg px-2 py-1 text-xs focus:outline-none"
                       >
                         <option value="">No Department</option>
                         {departments.map((d) => (
@@ -205,20 +209,20 @@ const Employees = () => {
                         ))}
                       </select>
                     ) : (
-                      <span className="text-zinc-400 font-semibold">{emp.department?.name || "—"}</span>
+                      <span className="text-zinc-300 font-semibold">{emp.department?.name || "—"}</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <Badge variant={getRoleBadgeVariant(emp.role)}>
+                  <td className="px-6 py-4">
+                    <Badge variant={getRoleBadgeVariant(emp.role)} className="uppercase text-[8px] font-black tracking-wider">
                       {emp.role}
                     </Badge>
                   </td>
                   {isAdmin && (
-                    <td className="px-6 py-4 text-sm text-right">
+                    <td className="px-6 py-4 text-right">
                       <select
                         value={emp.role}
                         onChange={(e) => handleRoleChange(emp.id, e.target.value)}
-                        className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded px-2.5 py-1 text-xs focus:ring-1 focus:ring-blue-500/30"
+                        className="bg-zinc-950/80 border border-zinc-800 text-zinc-300 rounded-lg px-2 py-1 text-xs focus:outline-none"
                       >
                         <option value="Employee">Employee</option>
                         <option value="DeptHead">Dept Head</option>
@@ -236,29 +240,26 @@ const Employees = () => {
 
       {/* Pagination Controls */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800/40">
-          <div className="text-xs text-zinc-400">
-            Showing Page <span className="font-semibold text-zinc-200">{pagination.page}</span> of{" "}
-            <span className="font-semibold text-zinc-200">{pagination.totalPages}</span> (Total{" "}
-            <span className="font-semibold text-zinc-200">{pagination.total}</span> employees)
+        <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/20 border border-zinc-850 rounded-2xl">
+          <div className="text-xs text-zinc-500 font-medium">
+            Showing Page <span className="font-bold text-zinc-300">{pagination.page}</span> of{" "}
+            <span className="font-bold text-zinc-300">{pagination.totalPages}</span> ({pagination.total} employees)
           </div>
           <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               disabled={pagination.page <= 1}
               onClick={() => setPage(pagination.page - 1)}
+              className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-zinc-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => setPage(pagination.page + 1)}
+              className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-850 text-zinc-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Next
-            </Button>
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}
