@@ -1,8 +1,9 @@
 {
-<<<<<<< HEAD
   "name": "assetflow",
+  "private": true,
   "version": "1.0.0",
-  "description": "Enterprise Asset & Resource Management ERP (Full-Stack Workspace)",
+  "description": "Enterprise Asset & Resource Management ERP workspace",
+  "type": "module",
   "scripts": {
     "install:server": "npm install --prefix server",
     "install:client": "npm install --prefix client",
@@ -10,23 +11,14 @@
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:root": "vite",
+    "build": "vite build",
     "build:client": "npm run build --prefix client",
+    "lint": "oxlint src vite.config.js --ignore-path .gitignore",
+    "preview": "vite preview",
     "prisma:generate": "npx prisma generate --schema=server/prisma/schema.prisma",
     "prisma:migrate": "npx prisma migrate dev --schema=server/prisma/schema.prisma",
     "prisma:seed": "node server/prisma/seed.js"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-=======
-  "name": "assetflow-frontend",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "oxlint src vite.config.js --ignore-path .gitignore",
-    "preview": "vite preview"
   },
   "dependencies": {
     "lucide-react": "^1.24.0",
@@ -39,9 +31,9 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "concurrently": "^8.2.2",
     "oxlint": "^1.71.0",
     "tailwindcss": "^4.3.2",
     "vite": "^8.1.1"
->>>>>>> f8829ed (Add asset booking and allocation modules)
   }
 }
