@@ -200,6 +200,16 @@ class MaintenanceService {
       message: `Your maintenance request for "${request.asset.name}" is now ${newStatus}.`
     });
 
+    // Broadcast real-time kanban refresh to all connected clients
+    try {
+      const { getIO } = require("../../lib/socket");
+      const io = getIO();
+      if (io) {
+        io.emit("maintenance_update", { requestId: updated.id, status: newStatus, assetId: request.assetId });
+        io.emit("dashboard_update", { type: "MAINTENANCE_UPDATED", data: { id: updated.id, status: newStatus } });
+      }
+    } catch (_) { /* non-fatal */ }
+
     return updated;
   }
 

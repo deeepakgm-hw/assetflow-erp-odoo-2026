@@ -5,6 +5,8 @@ import Button from "../components/Button";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSocket } from "../hooks/useSocket";
+import { useAuth } from "../hooks/useAuth";
 import {
   Wrench, AlertTriangle, CheckCircle2, Clock, XCircle,
   UserCheck, Play, Plus, Upload, ChevronRight, Filter, RefreshCw
@@ -274,7 +276,17 @@ const Maintenance = () => {
     }
   }, []);
 
+  const { user } = useAuth();
+  const socket = useSocket(user?.id);
+
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Real-time kanban refresh on maintenance_update socket event
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("maintenance_update", loadData);
+    return () => socket.off("maintenance_update", loadData);
+  }, [socket, loadData]);
 
   const handleAction = async (requestId, endpoint) => {
     try {
