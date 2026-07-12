@@ -1,0 +1,20 @@
+{
+  "name": "assetflow",
+  "version": "1.0.0",
+  "description": "Enterprise Asset & Resource Management ERP (Full-Stack Workspace)",
+  "scripts": {
+    "install:server": "npm install --prefix server",
+    "install:client": "npm install --prefix client",
+    "install:all": "npm run install:server && npm run install:client",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build:client": "npm run build --prefix client",
+    "prisma:generate": "npx prisma generate --schema=server/prisma/schema.prisma",
+    "prisma:migrate": "npx prisma migrate dev --schema=server/prisma/schema.prisma",
+    "prisma:seed": "node server/prisma/seed.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,10 +1,12 @@
-# AssetFlow ERP Backend
+# AssetFlow ERP — Full-Stack Enterprise Asset & Resource Management
 
-AssetFlow is an Enterprise Asset & Resource Management ERP backend built with Node.js, Express, PostgreSQL, Prisma ORM, and Socket.io. It supports tracking asset lifecycles, real-time alerts, role-based controls, activity audit trails, and department hierarchy structures.
+AssetFlow is a production-ready Enterprise Asset & Resource Management ERP system. It features a professional glassmorphic dark theme dashboard in React (Vite) and a robust backend built with Node.js, Express, PostgreSQL, Prisma ORM, and Socket.io.
 
 ---
 
 ## 🛠️ Stack & Technologies
+
+### Backend (`/server`)
 - **Runtime**: Node.js v20+
 - **Framework**: Express.js
 - **Database**: PostgreSQL (Dockerized or Local)
@@ -14,41 +16,90 @@ AssetFlow is an Enterprise Asset & Resource Management ERP backend built with No
 - **Security**: Helmet & CORS
 - **Request Validation**: express-validator
 
+### Frontend (`/client`)
+- **Framework**: React v18 (Vite build system)
+- **Styling**: TailwindCSS (Custom dark theme, outfit/inter typography)
+- **Routing**: React Router DOM (v6 with protected routes and role gates)
+- **State & Form Handling**: React Hook Form, React Context API
+- **Feedback**: React Hot Toast (Real-time Socket popup alerts)
+- **Icons**: Heroicons
+
 ---
 
-## 🚀 Setup & Installation
+## 🚀 Unified Setup & Running Both Layers
 
-### 1. Install System Dependencies
-Ensure you have Node.js and npm installed. From the `server` directory, run:
+### 1. Prerequisite: Database (PostgreSQL)
+Ensure you have a PostgreSQL instance running. If you are using Docker, you can start a database with:
 ```bash
-cd server
-npm install
+docker run --name assetflow-db -e POSTGRES_USER=assetflow -e POSTGRES_PASSWORD=assetflow123 -e POSTGRES_DB=assetflow -p 5432:5432 -d postgres
 ```
 
 ### 2. Configure Environment Variables
-Create or verify the `.env` file in the `server` directory:
+You must configure variables in both layers:
+
+#### Backend Environment (`server/.env`)
+Create `server/.env` with:
 ```env
 DATABASE_URL="postgresql://assetflow:assetflow123@localhost:5432/assetflow"
 PORT=5000
 JWT_SECRET=supersecret
 ```
 
-### 3. Database Migrations & Seeding
-Start your PostgreSQL database (via Docker or local system). Then run migrations and seed initial data:
-```bash
-# Run migrations to create schema
-npx prisma migrate dev
-
-# Seed database with Departments, Categories, and Admin User
-npx prisma db seed
+#### Frontend Environment (`client/.env`)
+Create `client/.env` with:
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
 ```
 
-### 4. Running the Server
-Start the development server with live reload:
+### 3. Install Workspace Dependencies
+Install dependencies for both frontend and backend concurrently from the root directory:
+```bash
+# Install root utility tool (concurrently)
+npm install
+
+# Install client and server packages
+npm run install:all
+```
+
+### 4. Run Migrations & Seed Database
+Setup the database tables and initial lookup records (Departments, Categories, and default Admin user):
+```bash
+# Run database migrations
+npm run prisma:migrate
+
+# Seed lookup records & admin account
+npm run prisma:seed
+```
+
+### 5. Launch Both Servers Concurrently
+Run both servers with a single command from the root directory:
 ```bash
 npm run dev
 ```
-The API server will run at `http://localhost:5000` and initialize Socket.io.
+- **Frontend App**: runs at `http://localhost:3000`
+- **Backend API**: runs at `http://localhost:5000`
+
+---
+
+## 🔑 Default Accounts (For Testing)
+Use these seeded accounts to log in:
+
+1. **System Administrator (Admin Role)**:
+   - **Email**: `admin@assetflow.com`
+   - **Password**: `Admin@123`
+
+2. **Asset Manager (AssetManager Role)**:
+   - **Email**: `manager@assetflow.com`
+   - **Password**: `Manager@123`
+
+3. **Department Head (DeptHead Role)**:
+   - **Email**: `head@assetflow.com`
+   - **Password**: `Head@123`
+
+4. **General Employee (Employee Role)**:
+   - **Email**: `employee@assetflow.com`
+   - **Password**: `Employee@123`
 
 ---
 
@@ -83,19 +134,6 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
     "password": "Admin@123"
   }
   ```
-- **Curl Test**:
-  ```bash
-  curl -X POST http://localhost:5000/api/auth/login \
-    -H "Content-Type: application/json" \
-    -d '{"email": "admin@assetflow.com", "password": "Admin@123"}'
-  ```
-
-#### Forgot Password Stub (Public)
-- **Endpoint**: `POST /api/auth/forgot-password`
-- **Curl Test**:
-  ```bash
-  curl -X POST http://localhost:5000/api/auth/forgot-password
-  ```
 
 ---
 
@@ -104,11 +142,6 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
 
 #### Get All Departments
 - **Endpoint**: `GET /api/departments`
-- **Curl Test**:
-  ```bash
-  curl -X GET http://localhost:5000/api/departments \
-    -H "Authorization: Bearer <JWT_TOKEN>"
-  ```
 
 #### Create Department
 - **Endpoint**: `POST /api/departments`
@@ -120,31 +153,9 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
     "headId": null
   }
   ```
-- **Curl Test**:
-  ```bash
-  curl -X POST http://localhost:5000/api/departments \
-    -H "Authorization: Bearer <JWT_TOKEN>" \
-    -H "Content-Type: application/json" \
-    -d '{"name": "QA Testing"}'
-  ```
 
 #### Update Department
 - **Endpoint**: `PUT /api/departments/:id`
-- **Request Body**:
-  ```json
-  {
-    "name": "Quality Assurance",
-    "parentDepartmentId": 1,
-    "headId": 1
-  }
-  ```
-- **Curl Test**:
-  ```bash
-  curl -X PUT http://localhost:5000/api/departments/4 \
-    -H "Authorization: Bearer <JWT_TOKEN>" \
-    -H "Content-Type: application/json" \
-    -d '{"name": "Quality Assurance", "parentDepartmentId": 1}'
-  ```
 
 #### Toggle Department Status (Active/Inactive)
 - **Endpoint**: `PATCH /api/departments/:id/status`
@@ -154,37 +165,12 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
     "status": "Inactive"
   }
   ```
-- **Curl Test**:
-  ```bash
-  curl -X PATCH http://localhost:5000/api/departments/4/status \
-    -H "Authorization: Bearer <JWT_TOKEN>" \
-    -H "Content-Type: application/json" \
-    -d '{"status": "Inactive"}'
-  ```
 
 #### Assign Department Head
 - **Endpoint**: `PATCH /api/departments/:id/head`
-- **Request Body**:
-  ```json
-  {
-    "headId": 2
-  }
-  ```
-- **Curl Test**:
-  ```bash
-  curl -X PATCH http://localhost:5000/api/departments/4/head \
-    -H "Authorization: Bearer <JWT_TOKEN>" \
-    -H "Content-Type: application/json" \
-    -d '{"headId": 2}'
-  ```
 
 #### Delete Department
 - **Endpoint**: `DELETE /api/departments/:id`
-- **Curl Test**:
-  ```bash
-  curl -X DELETE http://localhost:5000/api/departments/4 \
-    -H "Authorization: Bearer <JWT_TOKEN>"
-  ```
 
 ---
 
@@ -193,11 +179,6 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
 
 #### Get All Categories
 - **Endpoint**: `GET /api/categories`
-- **Curl Test**:
-  ```bash
-  curl -X GET http://localhost:5000/api/categories \
-    -H "Authorization: Bearer <JWT_TOKEN>"
-  ```
 
 #### Create Category
 - **Endpoint**: `POST /api/categories`
@@ -211,41 +192,12 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
     }
   }
   ```
-- **Curl Test**:
-  ```bash
-  curl -X POST http://localhost:5000/api/categories \
-    -H "Authorization: Bearer <JWT_TOKEN>" \
-    -H "Content-Type: application/json" \
-    -d '{"name": "Tablet", "customFields": {"OS": "iOS", "Storage": "256GB"}}'
-  ```
 
 #### Update Category
 - **Endpoint**: `PUT /api/categories/:id`
-- **Request Body**:
-  ```json
-  {
-    "name": "Pro Tablets",
-    "customFields": {
-      "OS": "iOS/Android",
-      "Storage": "512GB"
-    }
-  }
-  ```
-- **Curl Test**:
-  ```bash
-  curl -X PUT http://localhost:5000/api/categories/4 \
-    -H "Authorization: Bearer <JWT_TOKEN>" \
-    -H "Content-Type: application/json" \
-    -d '{"name": "Pro Tablets", "customFields": {"OS": "iOS/Android"}}'
-  ```
 
 #### Delete Category
 - **Endpoint**: `DELETE /api/categories/:id`
-- **Curl Test**:
-  ```bash
-  curl -X DELETE http://localhost:5000/api/categories/4 \
-    -H "Authorization: Bearer <JWT_TOKEN>"
-  ```
 
 ---
 
@@ -254,11 +206,6 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
 
 #### List Employees (with search, filter, pagination)
 - **Endpoint**: `GET /api/employees?search=&departmentId=&role=&page=1&limit=10`
-- **Curl Test**:
-  ```bash
-  curl -X GET "http://localhost:5000/api/employees?page=1&limit=5&search=Jane" \
-    -H "Authorization: Bearer <JWT_TOKEN>"
-  ```
 
 #### Promote Role (Employee -> DeptHead / AssetManager / Admin)
 - **Endpoint**: `PATCH /api/employees/:id/role`
@@ -267,13 +214,6 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
   {
     "role": "DeptHead"
   }
-  ```
-- **Curl Test**:
-  ```bash
-  curl -X PATCH http://localhost:5000/api/employees/2/role \
-    -H "Authorization: Bearer <JWT_TOKEN>" \
-    -H "Content-Type: application/json" \
-    -d '{"role": "DeptHead"}'
   ```
 
 #### Assign Department
@@ -284,13 +224,6 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
     "departmentId": 1
   }
   ```
-- **Curl Test**:
-  ```bash
-  curl -X PATCH http://localhost:5000/api/employees/2/department \
-    -H "Authorization: Bearer <JWT_TOKEN>" \
-    -H "Content-Type: application/json" \
-    -d '{"departmentId": 1}'
-  ```
 
 ---
 
@@ -299,11 +232,6 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
 
 #### Fetch Activity Logs (with pagination & filters)
 - **Endpoint**: `GET /api/activity?page=1&limit=20&entityType=Department&search=`
-- **Curl Test**:
-  ```bash
-  curl -X GET "http://localhost:5000/api/activity?page=1&limit=10" \
-    -H "Authorization: Bearer <JWT_TOKEN>"
-  ```
 
 ---
 
@@ -312,20 +240,9 @@ The API server will run at `http://localhost:5000` and initialize Socket.io.
 
 #### Get User Notifications
 - **Endpoint**: `GET /api/notifications?type=All`
-- **Supported types**: `All`, `Alerts`, `Approvals`, `Bookings`
-- **Curl Test**:
-  ```bash
-  curl -X GET "http://localhost:5000/api/notifications?type=All" \
-    -H "Authorization: Bearer <JWT_TOKEN>"
-  ```
 
 #### Mark Notification as Read
 - **Endpoint**: `PATCH /api/notifications/:id/read`
-- **Curl Test**:
-  ```bash
-  curl -X PATCH http://localhost:5000/api/notifications/1/read \
-    -H "Authorization: Bearer <JWT_TOKEN>"
-  ```
 
 ---
 

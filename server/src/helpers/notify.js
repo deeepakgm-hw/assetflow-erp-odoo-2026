@@ -22,6 +22,7 @@ const notify = async ({ userId, type, message }) => {
     const io = getIO();
     if (io) {
       io.to(`user-${userId}`).emit("notification", notification);
+      io.to(`user-${userId}`).emit("dashboard_update", { type: "NOTIFICATION_RECEIVED", data: notification });
       console.log(`Socket emitted notification to user-${userId}:`, message);
     } else {
       console.warn("Socket.io is not initialized; notification saved to DB only");
