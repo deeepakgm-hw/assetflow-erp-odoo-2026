@@ -62,10 +62,23 @@ const getDepartmentStats = async (req, res, next) => {
   }
 };
 
+const getDetailedStats = async (req, res, next) => {
+  try {
+    const details = await dashboardService.getDetailedStats();
+    res.status(200).json({
+      status: "success",
+      data: details
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getSummaryStats,
   getKPIs,
   getOverdueAssets,
   getRecentActivities,
-  getDepartmentStats
+  getDepartmentStats,
+  getDetailedStats
 };
