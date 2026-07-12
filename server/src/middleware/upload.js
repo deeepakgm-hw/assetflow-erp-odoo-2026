@@ -21,9 +21,9 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // Allow common images and document formats
-  const allowedExtensions = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|csv|txt/;
-  const allowedMimeTypes = /image\/|application\/pdf|application\/msword|application\/vnd.openxmlformats-officedocument|text\//;
+  // Enforce anchored extensions and MIME types for security
+  const allowedExtensions = /^\.(jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|csv|txt)$/;
+  const allowedMimeTypes = /^(image\/(jpeg|jpg|png|gif)|application\/pdf|application\/msword|application\/vnd.openxmlformats-officedocument|text\/plain)$/;
 
   const extName = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
   const mimeType = allowedMimeTypes.test(file.mimetype);
@@ -37,7 +37,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB maximum file size
   fileFilter: fileFilter
 });
 

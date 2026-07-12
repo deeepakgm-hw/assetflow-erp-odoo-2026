@@ -35,9 +35,15 @@ const writeAssets = (assets) => {
  * @returns {Promise<Array>} - List of assets
  */
 const getAllAssets = async (query) => {
+  // TODO: Replace local JSON storage calculations with Prisma once the Asset model is defined:
+  // return await prisma.asset.findMany({ where: ... , include: { category: true, department: true } });
+
   let assets = readAssets();
 
-  const { status, categoryId, departmentId, search, page = 1, limit = 10 } = query;
+  const { status, categoryId, category_id, departmentId, department_id, search, page = 1, limit = 10 } = query;
+
+  const targetCategoryId = category_id ? parseInt(category_id, 10) : (categoryId ? parseInt(categoryId, 10) : null);
+  const targetDepartmentId = department_id ? parseInt(department_id, 10) : (departmentId ? parseInt(departmentId, 10) : null);
 
   // Filter by status
   if (status) {
@@ -45,21 +51,22 @@ const getAllAssets = async (query) => {
   }
 
   // Filter by categoryId
-  if (categoryId) {
-    assets = assets.filter(a => a.categoryId === parseInt(categoryId, 10));
+  if (targetCategoryId) {
+    assets = assets.filter(a => a.categoryId === targetCategoryId);
   }
 
   // Filter by departmentId
-  if (departmentId) {
-    assets = assets.filter(a => a.departmentId === parseInt(departmentId, 10));
+  if (targetDepartmentId) {
+    assets = assets.filter(a => a.departmentId === targetDepartmentId);
   }
 
-  // Search by name or serialNumber
+  // Search by name, serialNumber, or assetTag
   if (search) {
     const searchLower = search.toLowerCase();
     assets = assets.filter(a => 
       (a.name && a.name.toLowerCase().includes(searchLower)) ||
-      (a.serialNumber && a.serialNumber.toLowerCase().includes(searchLower))
+      (a.serialNumber && a.serialNumber.toLowerCase().includes(searchLower)) ||
+      (a.assetTag && a.assetTag.toLowerCase().includes(searchLower))
     );
   }
 
@@ -67,31 +74,27 @@ const getAllAssets = async (query) => {
   const startIndex = (parseInt(page, 10) - 1) * parseInt(limit, 10);
   const paginatedAssets = assets.slice(startIndex, startIndex + parseInt(limit, 10));
 
-  // Resolve category and department relations from Prisma
-  const resolvedAssets = await Promise.all(
-    paginatedAssets.map(async (asset) => {
-      let category = null;
-      let department = null;
+  // AVOID N+1: Query unique categories and departments in bulk
+  const categoryIds = [...new Set(paginatedAssets.map(a => a.categoryId).filter(Boolean))];
+  const departmentIds = [...new Set(paginatedAssets.map(a => a.departmentId).filter(Boolean))];
 
-      if (asset.categoryId) {
-        category = await prisma.category.findUnique({
-          where: { id: asset.categoryId }
-        }).catch(() => null);
-      }
+  const categories = await prisma.category.findMany({
+    where: { id: { in: categoryIds } }
+  }).catch(() => []);
 
-      if (asset.departmentId) {
-        department = await prisma.department.findUnique({
-          where: { id: asset.departmentId }
-        }).catch(() => null);
-      }
+  const departments = await prisma.department.findMany({
+    where: { id: { in: departmentIds } }
+  }).catch(() => []);
 
-      return {
-        ...asset,
-        category,
-        department
-      };
-    })
-  );
+  // Map collections for fast O(1) matching
+  const categoryMap = new Map(categories.map(c => [c.id, c]));
+  const departmentMap = new Map(departments.map(d => [d.id, d]));
+
+  const resolvedAssets = paginatedAssets.map((asset) => ({
+    ...asset,
+    category: categoryMap.get(asset.categoryId) || null,
+    department: departmentMap.get(asset.departmentId) || null
+  }));
 
   return resolvedAssets;
 };
@@ -102,6 +105,9 @@ const getAllAssets = async (query) => {
  * @returns {Promise<Object|null>} - The asset object or null
  */
 const getAssetById = async (id) => {
+  // TODO: Replace with Prisma when relations exist:
+  // return await prisma.asset.findUnique({ where: { id }, include: { category: true, department: true } });
+
   const assets = readAssets();
   const asset = assets.find(a => a.id === id);
 
@@ -137,20 +143,25 @@ const getAssetById = async (id) => {
  * @returns {Promise<Object>} - The created asset object
  */
 const createAsset = async (data, file, userId = 1) => {
+  // TODO: Replace JSON write with Prisma create() once the Asset model is defined:
+  // return await prisma.asset.create({ data: ... });
+
   const assets = readAssets();
 
+  const serialNumber = data.serial_number || data.serialNumber || null;
+
   // Validate serial number uniqueness
-  if (data.serialNumber) {
-    const exists = assets.some(a => a.serialNumber === data.serialNumber);
+  if (serialNumber) {
+    const exists = assets.some(a => a.serialNumber === serialNumber);
     if (exists) {
-      throw new APIError(`Asset with serial number ${data.serialNumber} already exists`, 400);
+      throw new APIError(`Asset with serial number ${serialNumber} already exists`, 400);
     }
   }
 
   // Validate Category ID exists in Prisma
-  const categoryId = parseInt(data.categoryId, 10);
+  const categoryId = parseInt(data.category_id || data.categoryId, 10);
   if (isNaN(categoryId)) {
-    throw new APIError("Valid Category ID is required", 400);
+    throw new APIError("Valid category_id is required", 400);
   }
   const categoryExists = await prisma.category.findUnique({ where: { id: categoryId } });
   if (!categoryExists) {
@@ -159,8 +170,9 @@ const createAsset = async (data, file, userId = 1) => {
 
   // Validate Department ID exists in Prisma (if provided)
   let departmentId = null;
-  if (data.departmentId) {
-    departmentId = parseInt(data.departmentId, 10);
+  const deptInput = data.department_id || data.departmentId;
+  if (deptInput) {
+    departmentId = parseInt(deptInput, 10);
     if (!isNaN(departmentId)) {
       const deptExists = await prisma.department.findUnique({ where: { id: departmentId } });
       if (!deptExists) {
@@ -172,15 +184,25 @@ const createAsset = async (data, file, userId = 1) => {
   // Handle file uploads
   const attachmentUrl = file ? `/uploads/${file.filename}` : null;
 
+  // Determine next asset tag sequentially (AF-0001, AF-0002...)
+  const assetId = assets.length > 0 ? Math.max(...assets.map(a => a.id)) + 1 : 1;
+  const assetTag = `AF-${String(assetId).padStart(4, "0")}`;
+
+  const isBookable = data.is_bookable !== undefined ? !!data.is_bookable : (data.isBookable !== undefined ? !!data.isBookable : true);
+
   const newAsset = {
-    id: assets.length > 0 ? Math.max(...assets.map(a => a.id)) + 1 : 1,
+    id: assetId,
+    assetTag,
     name: data.name || "Unnamed Asset",
-    serialNumber: data.serialNumber || null,
+    serialNumber,
     status: data.status || "Active",
     purchaseDate: data.purchaseDate ? new Date(data.purchaseDate).toISOString() : new Date().toISOString(),
-    purchaseCost: parseFloat(data.purchaseCost) || 0.0,
+    purchaseCost: parseFloat(data.acquisition_cost || data.purchaseCost) || 0.0,
     categoryId,
     departmentId,
+    condition: data.condition || "Good",
+    location: data.location || "Main Warehouse",
+    isBookable,
     attachmentUrl,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -190,7 +212,7 @@ const createAsset = async (data, file, userId = 1) => {
   writeAssets(assets);
 
   // Log activity in Prisma
-  await logActivity(userId, `Created Asset: ${newAsset.name} (S/N: ${newAsset.serialNumber || "N/A"})`, "Asset", newAsset.id);
+  await logActivity(userId, `Created Asset: ${newAsset.name} (Tag: ${newAsset.assetTag})`, "Asset", newAsset.id);
 
   return {
     ...newAsset,
@@ -208,6 +230,9 @@ const createAsset = async (data, file, userId = 1) => {
  * @returns {Promise<Object>} - The updated asset object
  */
 const updateAsset = async (id, data, file, userId = 1) => {
+  // TODO: Replace with Prisma once the Asset model is defined:
+  // return await prisma.asset.update({ where: { id }, data: ... });
+
   const assets = readAssets();
   const assetIndex = assets.findIndex(a => a.id === id);
 
@@ -217,18 +242,21 @@ const updateAsset = async (id, data, file, userId = 1) => {
 
   const existingAsset = assets[assetIndex];
 
+  const serialNumber = data.serial_number !== undefined ? data.serial_number : (data.serialNumber !== undefined ? data.serialNumber : existingAsset.serialNumber);
+
   // Validate serial number uniqueness (if updated)
-  if (data.serialNumber && data.serialNumber !== existingAsset.serialNumber) {
-    const exists = assets.some(a => a.serialNumber === data.serialNumber);
+  if (serialNumber && serialNumber !== existingAsset.serialNumber) {
+    const exists = assets.some(a => a.serialNumber === serialNumber);
     if (exists) {
-      throw new APIError(`Asset with serial number ${data.serialNumber} already exists`, 400);
+      throw new APIError(`Asset with serial number ${serialNumber} already exists`, 400);
     }
   }
 
   // Validate Category ID exists (if updated)
   let categoryId = existingAsset.categoryId;
-  if (data.categoryId) {
-    categoryId = parseInt(data.categoryId, 10);
+  const categoryInput = data.category_id || data.categoryId;
+  if (categoryInput) {
+    categoryId = parseInt(categoryInput, 10);
     const categoryExists = await prisma.category.findUnique({ where: { id: categoryId } });
     if (!categoryExists) {
       throw new APIError(`Category with ID ${categoryId} does not exist`, 400);
@@ -237,8 +265,9 @@ const updateAsset = async (id, data, file, userId = 1) => {
 
   // Validate Department ID exists (if updated)
   let departmentId = existingAsset.departmentId;
-  if (data.departmentId) {
-    departmentId = parseInt(data.departmentId, 10);
+  const deptInput = data.department_id || data.departmentId;
+  if (deptInput) {
+    departmentId = parseInt(deptInput, 10);
     const deptExists = await prisma.department.findUnique({ where: { id: departmentId } });
     if (!deptExists) {
       throw new APIError(`Department with ID ${departmentId} does not exist`, 400);
@@ -261,15 +290,20 @@ const updateAsset = async (id, data, file, userId = 1) => {
     attachmentUrl = `/uploads/${file.filename}`;
   }
 
+  const isBookable = data.is_bookable !== undefined ? !!data.is_bookable : (data.isBookable !== undefined ? !!data.isBookable : existingAsset.isBookable);
+
   const updatedAsset = {
     ...existingAsset,
     name: data.name !== undefined ? data.name : existingAsset.name,
-    serialNumber: data.serialNumber !== undefined ? data.serialNumber : existingAsset.serialNumber,
+    serialNumber,
     status: data.status !== undefined ? data.status : existingAsset.status,
     purchaseDate: data.purchaseDate !== undefined ? new Date(data.purchaseDate).toISOString() : existingAsset.purchaseDate,
-    purchaseCost: data.purchaseCost !== undefined ? parseFloat(data.purchaseCost) : existingAsset.purchaseCost,
+    purchaseCost: data.acquisition_cost !== undefined ? parseFloat(data.acquisition_cost) : (data.purchaseCost !== undefined ? parseFloat(data.purchaseCost) : existingAsset.purchaseCost),
     categoryId,
     departmentId,
+    condition: data.condition !== undefined ? data.condition : existingAsset.condition,
+    location: data.location !== undefined ? data.location : existingAsset.location,
+    isBookable,
     attachmentUrl,
     updatedAt: new Date().toISOString()
   };
@@ -294,6 +328,9 @@ const updateAsset = async (id, data, file, userId = 1) => {
  * @returns {Promise<boolean>} - Success confirmation
  */
 const deleteAsset = async (id, userId = 1) => {
+  // TODO: Replace with Prisma delete once the Asset model is defined:
+  // await prisma.asset.delete({ where: { id } });
+
   const assets = readAssets();
   const assetIndex = assets.findIndex(a => a.id === id);
 
@@ -319,7 +356,7 @@ const deleteAsset = async (id, userId = 1) => {
   writeAssets(assets);
 
   // Log activity in Prisma
-  await logActivity(userId, `Deleted Asset: ${asset.name} (S/N: ${asset.serialNumber || "N/A"})`, "Asset", id);
+  await logActivity(userId, `Deleted Asset: ${asset.name} (Tag: ${asset.assetTag})`, "Asset", id);
 
   return true;
 };

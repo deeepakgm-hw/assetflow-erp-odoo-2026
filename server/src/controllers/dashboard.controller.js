@@ -12,6 +12,31 @@ const getSummaryStats = async (req, res, next) => {
   }
 };
 
+const getKPIs = async (req, res, next) => {
+  try {
+    const kpis = await dashboardService.getKPIs();
+    res.status(200).json({
+      status: "success",
+      data: kpis
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getOverdueAssets = async (req, res, next) => {
+  try {
+    const assets = await dashboardService.getOverdueAssets();
+    res.status(200).json({
+      status: "success",
+      results: assets.length,
+      data: { assets }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getRecentActivities = async (req, res, next) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
@@ -39,6 +64,8 @@ const getDepartmentStats = async (req, res, next) => {
 
 module.exports = {
   getSummaryStats,
+  getKPIs,
+  getOverdueAssets,
   getRecentActivities,
   getDepartmentStats
 };

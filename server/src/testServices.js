@@ -5,6 +5,12 @@ const prismaMock = {
       console.log(`🔍 [Mock Prisma] category.findUnique called for ID: ${where.id}`);
       if (where.id === 999) return null; // category not found test case
       return { id: where.id, name: "Mock Laptop", customFields: { warranty: "3 Years" } };
+    },
+    findMany: async () => {
+      console.log("🔍 [Mock Prisma] category.findMany called");
+      return [
+        { id: 1, name: "Mock Laptop" }
+      ];
     }
   },
   department: {
@@ -57,19 +63,22 @@ if (fs.existsSync(dbPath)) {
 async function runTests() {
   console.log("🧪 Starting Backend Service Logic Tests...");
 
-  // 1. Create Asset
+  // 1. Create Asset (using snake_case parameters)
   console.log("\n--- Test: Create Asset ---");
   const asset1 = await assetService.createAsset({
     name: "MacBook Pro 16",
-    serialNumber: "SN-MAC-12345",
-    purchaseCost: "2499.99",
-    categoryId: "1",
-    departmentId: "1"
+    serial_number: "SN-MAC-12345",
+    acquisition_cost: "2499.99",
+    category_id: "1",
+    department_id: "1",
+    is_bookable: true
   }, null, 42);
 
   assert.strictEqual(asset1.name, "MacBook Pro 16");
   assert.strictEqual(asset1.serialNumber, "SN-MAC-12345");
   assert.strictEqual(asset1.purchaseCost, 2499.99);
+  assert.strictEqual(asset1.assetTag, "AF-0001"); // Custom Tag Generation Check
+  assert.strictEqual(asset1.isBookable, true); // Bookable field check
   assert.strictEqual(asset1.category.name, "Mock Laptop");
   assert.strictEqual(asset1.department.name, "Mock Engineering");
   console.log("✅ Asset Creation successful!");
@@ -79,8 +88,8 @@ async function runTests() {
   try {
     await assetService.createAsset({
       name: "Another MacBook",
-      serialNumber: "SN-MAC-12345",
-      categoryId: "1"
+      serial_number: "SN-MAC-12345",
+      category_id: "1"
     });
     assert.fail("Should have failed on duplicate serial number");
   } catch (error) {
@@ -93,8 +102,8 @@ async function runTests() {
   try {
     await assetService.createAsset({
       name: "Ghost Laptop",
-      serialNumber: "SN-GHOST",
-      categoryId: "999" // returns null in mock
+      serial_number: "SN-GHOST",
+      category_id: "999" // returns null in mock
     });
     assert.fail("Should have failed on invalid categoryId");
   } catch (error) {
@@ -102,18 +111,19 @@ async function runTests() {
     console.log("✅ Invalid Category ID correctly rejected!");
   }
 
-  // 4. Retrieve All Assets
+  // 4. Retrieve All Assets (checking N+1 bulk loader)
   console.log("\n--- Test: Get All Assets ---");
   const allAssets = await assetService.getAllAssets({ search: "MacBook" });
   assert.strictEqual(allAssets.length, 1);
   assert.strictEqual(allAssets[0].name, "MacBook Pro 16");
-  console.log("✅ Assets listing & search logic works!");
+  assert.strictEqual(allAssets[0].assetTag, "AF-0001");
+  console.log("✅ Assets listing, search, and bulk resolver works!");
 
   // 5. Update Asset
   console.log("\n--- Test: Update Asset ---");
   const updated = await assetService.updateAsset(asset1.id, {
     name: "MacBook Pro 16 M3 Max",
-    purchaseCost: "3499.99"
+    acquisition_cost: "3499.99"
   }, null, 42);
 
   assert.strictEqual(updated.name, "MacBook Pro 16 M3 Max");
@@ -126,6 +136,12 @@ async function runTests() {
   assert.strictEqual(summary.totalAssets, 1);
   assert.strictEqual(summary.totalValue, 3499.99);
   console.log("✅ Dashboard summary stats aggregate successfully!");
+
+  console.log("\n--- Test: Dashboard KPIs ---");
+  const kpis = await dashboardService.getKPIs();
+  assert.strictEqual(kpis.assetsAvailable, 1); // Asset status 'Active' (fallback maps active to available)
+  assert.strictEqual(kpis.assetsAllocated, 0);
+  console.log("✅ Dashboard KPIs (Available/Allocated) calculated correctly!");
 
   console.log("\n--- Test: Dashboard Department Stats ---");
   const deptStats = await dashboardService.getDepartmentStats();
