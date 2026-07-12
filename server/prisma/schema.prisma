@@ -51,8 +51,7 @@ model Department {
   name   String           @unique
   status DepartmentStatus @default(Active)
 
-  // One department = one head
-  // One user can head only one department
+  // One department can have one head
   headId Int?  @unique
   head   User? @relation("DepartmentHead", fields: [headId], references: [id])
 
@@ -61,7 +60,7 @@ model Department {
   parentDepartment   Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
   childDepartments   Department[] @relation("DepartmentHierarchy")
 
-  // Employees in department
+  // Employees in this department
   users User[] @relation("DepartmentUsers")
 
   createdAt DateTime @default(now())
