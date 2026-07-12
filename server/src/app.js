@@ -33,10 +33,10 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes registration
 app.use("/api/auth", authRoutes);
-app.use("/api/departments", authenticate, authorize("Admin"), departmentRoutes);
-app.use("/api/categories", authenticate, authorize("Admin"), categoryRoutes);
-app.use("/api/employees", authenticate, authorize("Admin"), employeeRoutes);
-app.use("/api/activity", authenticate, authorize("Admin"), activityRoutes);
+app.use("/api/departments", authenticate, departmentRoutes);
+app.use("/api/categories", authenticate, categoryRoutes);
+app.use("/api/employees", authenticate, employeeRoutes);
+app.use("/api/activity", authenticate, activityRoutes);
 app.use("/api/notifications", authenticate, notificationRoutes);
 app.use("/api/assets", assetRoutes);
 app.use("/api/dashboard", dashboardRoutes);

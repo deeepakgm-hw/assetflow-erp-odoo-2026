@@ -1,5 +1,6 @@
 const express = require("express");
 const categoriesController = require("./categories.controller");
+const authorize = require("../../../middleware/role.middleware");
 const {
   createCategoryValidation,
   updateCategoryValidation
@@ -8,8 +9,8 @@ const {
 const router = express.Router();
 
 router.get("/", categoriesController.getAll);
-router.post("/", createCategoryValidation, categoriesController.create);
-router.put("/:id", updateCategoryValidation, categoriesController.update);
-router.delete("/:id", categoriesController.delete);
+router.post("/", authorize("Admin"), createCategoryValidation, categoriesController.create);
+router.put("/:id", authorize("Admin"), updateCategoryValidation, categoriesController.update);
+router.delete("/:id", authorize("Admin"), categoriesController.delete);
 
 module.exports = router;
