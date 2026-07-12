@@ -30,12 +30,12 @@ const Sidebar = () => {
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "Organization", path: "/organization", icon: Building2 },
-    { name: "Assets", path: "/assets", icon: Briefcase, disabled: true },
+    { name: "Assets", path: "/assets", icon: Briefcase },
     { name: "Allocation", path: "/allocation", icon: ArrowLeftRight, disabled: true },
     { name: "Bookings", path: "/booking", icon: Calendar, disabled: true },
-    { name: "Maintenance", path: "/maintenance", icon: Wrench, disabled: true },
-    { name: "Audit Trail", path: "/audit", icon: FileCheck2, disabled: true },
-    { name: "Reports", path: "/reports", icon: BarChart3, disabled: true },
+    { name: "Maintenance", path: "/maintenance", icon: Wrench },
+    { name: "Audit Trail", path: "/audit", icon: FileCheck2 },
+    { name: "Reports", path: "/reports", icon: BarChart3 },
     { name: "Notifications", path: "/notifications", icon: Bell },
   ];
 

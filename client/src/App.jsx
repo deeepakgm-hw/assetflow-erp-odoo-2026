@@ -19,6 +19,9 @@ import Notifications from "./pages/Notifications";
 import ActivityLogs from "./pages/ActivityLogs";
 import Assets from "./pages/Assets";
 import AssetDetail from "./pages/AssetDetail";
+import Maintenance from "./pages/Maintenance";
+import Audit from "./pages/Audit";
+import Reports from "./pages/Reports";
 
 function App() {
   return (
@@ -45,6 +48,9 @@ function App() {
             <Route path="activity" element={<ActivityLogs />} />
             <Route path="assets" element={<Assets />} />
             <Route path="assets/:id" element={<AssetDetail />} />
+            <Route path="maintenance" element={<Maintenance />} />
+            <Route path="audit" element={<Audit />} />
+            <Route path="reports" element={<Reports />} />
 
             {/* Admin-only Routes */}
             <Route

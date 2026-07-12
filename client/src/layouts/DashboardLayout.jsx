@@ -52,6 +52,9 @@ const DashboardLayout = () => {
     if (path.startsWith("/organization")) return "Organization Setup";
     if (path.startsWith("/notifications")) return "Real-time Notifications";
     if (path.startsWith("/activity")) return "Activity Audit Trail";
+    if (path.startsWith("/maintenance")) return "Maintenance Management";
+    if (path.startsWith("/audit")) return "Asset Audit";
+    if (path.startsWith("/reports")) return "Reports & Analytics";
     return "AssetFlow ERP";
   };
 

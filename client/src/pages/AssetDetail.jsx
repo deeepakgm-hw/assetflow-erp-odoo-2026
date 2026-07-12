@@ -9,6 +9,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import RegisterAssetModal from "../components/RegisterAssetModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import toast from "react-hot-toast";
+import api from "../services/api";
 import { ArrowLeftIcon, CalendarDaysIcon, MapPinIcon, ShieldCheckIcon, UserIcon, WrenchScrewdriverIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 const AssetDetail = () => {
@@ -16,6 +17,7 @@ const AssetDetail = () => {
   const navigate = useNavigate();
 
   const [asset, setAsset] = useState(null);
+  const [maintenanceHistory, setMaintenanceHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("allocation");
 
@@ -36,9 +38,19 @@ const AssetDetail = () => {
     }
   }, [id]);
 
+  const fetchMaintenanceHistory = useCallback(async () => {
+    try {
+      const res = await api.get(`/maintenance-requests/asset/${id}`);
+      setMaintenanceHistory(res.data?.data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchAssetDetails();
-  }, [fetchAssetDetails]);
+    fetchMaintenanceHistory();
+  }, [fetchAssetDetails, fetchMaintenanceHistory]);
 
   const handleDeleteSubmit = async () => {
     if (!asset) return;
@@ -284,17 +296,21 @@ const AssetDetail = () => {
                   </div>
                 </div>
               ) : (
-                <div className="relative border-l border-zinc-800 ml-3.5 space-y-6">
-                  {/* Mock/Simulated Maintenance event */}
-                  <div className="relative pl-7">
-                    <span className="absolute -left-3.5 top-0.5 flex items-center justify-center bg-zinc-850 border border-zinc-950 h-7 w-7 rounded-full text-zinc-450">
-                      <WrenchScrewdriverIcon className="h-3.5 w-3.5" />
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold text-zinc-450">No Maintenance History</p>
-                      <p className="text-[10px] text-zinc-550 font-semibold mt-0.5">Zero service logs reported for this entry.</p>
+                <div className="space-y-3">
+                  {maintenanceHistory.length > 0 ? maintenanceHistory.map((entry) => (
+                    <div key={entry.id} className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-400">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-zinc-200">{entry.status}</span>
+                        <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div className="mt-1 text-zinc-300">{entry.description}</div>
+                      <div className="mt-1 text-[10px] uppercase tracking-wide text-zinc-500">Requested by {entry.requestedBy?.name || "—"}</div>
                     </div>
-                  </div>
+                  )) : (
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-400">
+                      No maintenance history found for this asset yet.
+                    </div>
+                  )}
                 </div>
               )}
             </div>

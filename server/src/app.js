@@ -19,6 +19,9 @@ const resourceRoutes = require("./modules/organization/resources/resources.route
 const allocationRoutes = require("./modules/allocations/allocations.routes");
 const transferRoutes = require("./modules/transfers/transfers.routes");
 const bookingRoutes = require("./modules/bookings/bookings.routes");
+const maintenanceRoutes = require("./modules/maintenance/maintenance.routes");
+const auditRoutes = require("./modules/audit/audit.routes");
+const reportRoutes = require("./modules/reports/reports.routes");
 const { startOverdueChecker } = require("./helpers/overdueChecker");
 
 const app = express();
@@ -43,6 +46,9 @@ app.use("/api/resources", resourceRoutes);
 app.use("/api/allocations", allocationRoutes);
 app.use("/api/transfer-requests", transferRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/maintenance-requests", authenticate, maintenanceRoutes);
+app.use("/api/audit-cycles", authenticate, auditRoutes);
+app.use("/api/reports", authenticate, reportRoutes);
 
 startOverdueChecker();
 

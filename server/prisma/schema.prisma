@@ -48,6 +48,10 @@ model User {
   transfersFrom TransferRequest[] @relation("FromUserTransfers")
   transfersTo   TransferRequest[] @relation("ToUserTransfers")
   bookings      Booking[]
+  maintenanceRequests MaintenanceRequest[] @relation("MaintenanceRequestsByUser")
+  maintenanceApprovals MaintenanceRequest[] @relation("MaintenanceApprovals")
+  maintenanceAssignments MaintenanceRequest[] @relation("MaintenanceTechnicians")
+  auditCycles   AuditCycle[]      @relation("AuditCyclesCreatedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -121,9 +125,79 @@ model Asset {
   expectedReturnDate DateTime?
   allocations        Allocation[]
   transfers          TransferRequest[]
+  maintenanceRequests MaintenanceRequest[]
+  auditItems         AuditItem[]
 
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
+}
+
+enum MaintenanceStatus {
+  Pending
+  Approved
+  Rejected
+  TechnicianAssigned
+  InProgress
+  Resolved
+}
+
+model MaintenanceRequest {
+  id              Int               @id @default(autoincrement())
+  assetId         String
+  asset           Asset             @relation(fields: [assetId], references: [id])
+  requestedById   Int
+  requestedBy     User              @relation("MaintenanceRequestsByUser", fields: [requestedById], references: [id])
+  description     String
+  priority        String            @default("Medium")
+  photoUrl        String?
+  status          MaintenanceStatus @default(Pending)
+  approvedById    Int?
+  approvedBy      User?             @relation("MaintenanceApprovals", fields: [approvedById], references: [id])
+  technicianId    Int?
+  technician      User?             @relation("MaintenanceTechnicians", fields: [technicianId], references: [id])
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+enum AuditCycleStatus {
+  Open
+  Closed
+}
+
+enum AuditItemStatus {
+  Pending
+  Verified
+  Missing
+  Damaged
+}
+
+model AuditCycle {
+  id              Int               @id @default(autoincrement())
+  name            String
+  department      String?
+  location        String?
+  startDate       DateTime
+  endDate         DateTime
+  auditorIds      Int[]             @default([])
+  status          AuditCycleStatus  @default(Open)
+  createdById     Int?
+  createdBy       User?             @relation("AuditCyclesCreatedBy", fields: [createdById], references: [id])
+  items           AuditItem[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model AuditItem {
+  id              Int               @id @default(autoincrement())
+  auditCycleId    Int
+  auditCycle      AuditCycle        @relation(fields: [auditCycleId], references: [id])
+  assetId         String
+  asset           Asset             @relation(fields: [assetId], references: [id])
+  status          AuditItemStatus   @default(Pending)
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 model Allocation {
