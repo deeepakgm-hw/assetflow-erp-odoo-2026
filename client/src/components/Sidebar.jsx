@@ -26,7 +26,7 @@ const Sidebar = () => {
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: HomeIcon },
     { name: "Organization Setup", path: "/organization", icon: Squares2X2Icon },
-    { name: "Assets", path: "/assets", icon: BriefcaseIcon, disabled: true },
+    { name: "Assets", path: "/assets", icon: BriefcaseIcon },
     { name: "Allocation & Transfer", path: "/allocation", icon: ArrowPathIcon, disabled: true },
     { name: "Resource Booking", path: "/booking", icon: CalendarDaysIcon, disabled: true },
     { name: "Maintenance", path: "/maintenance", icon: WrenchScrewdriverIcon, disabled: true },
