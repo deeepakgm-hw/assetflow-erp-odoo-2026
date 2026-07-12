@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  Admin
+  AssetManager
+  DeptHead
+  Employee
+}
+
+enum UserStatus {
+  Active
+  Inactive
+}
+
+enum DepartmentStatus {
+  Active
+  Inactive
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(Employee)
+  status       UserStatus @default(Active)
+
+  departmentId Int?
+  department   Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
+
+  // User can head at most one department
+  headedDepartment Department? @relation("DepartmentHead")
+
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Department {
+  id     Int              @id @default(autoincrement())
+  name   String           @unique
+  status DepartmentStatus @default(Active)
+
+  // One department = one head
+  // One user can head only one department
+  headId Int?  @unique
+  head   User? @relation("DepartmentHead", fields: [headId], references: [id])
+
+  // Optional parent department
+  parentDepartmentId Int?
+  parentDepartment   Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
+  childDepartments   Department[] @relation("DepartmentHierarchy")
+
+  // Employees in department
+  users User[] @relation("DepartmentUsers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id           Int    @id @default(autoincrement())
+  name         String @unique
+  customFields Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  type    String
+  message String
+  isRead  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  action     String
+  entityType String
+  entityId   Int
+
+  timestamp DateTime @default(now())
+}
