@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Building2,
@@ -28,17 +28,6 @@ const Sidebar = () => {
   };
 
   const navItems = [
-<<<<<<< HEAD
-    { name: "Dashboard", path: "/dashboard", icon: HomeIcon },
-    { name: "Organization Setup", path: "/organization", icon: Squares2X2Icon },
-    { name: "Assets", path: "/assets", icon: BriefcaseIcon },
-    { name: "Allocation & Transfer", path: "/allocation", icon: ArrowPathIcon, disabled: true },
-    { name: "Resource Booking", path: "/booking", icon: CalendarDaysIcon, disabled: true },
-    { name: "Maintenance", path: "/maintenance", icon: WrenchScrewdriverIcon, disabled: true },
-    { name: "Audit", path: "/audit", icon: ClipboardDocumentCheckIcon, disabled: true },
-    { name: "Reports", path: "/reports", icon: ChartPieIcon, disabled: true },
-    { name: "Notifications", path: "/notifications", icon: BellIcon },
-=======
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "Organization", path: "/organization", icon: Building2 },
     { name: "Assets", path: "/assets", icon: Briefcase, disabled: true },
@@ -48,7 +37,6 @@ const Sidebar = () => {
     { name: "Audit Trail", path: "/audit", icon: FileCheck2, disabled: true },
     { name: "Reports", path: "/reports", icon: BarChart3, disabled: true },
     { name: "Notifications", path: "/notifications", icon: Bell },
->>>>>>> 85b1237 (redesign enterprise dashboard and improve UI integration)
   ];
 
   return (
@@ -73,7 +61,7 @@ const Sidebar = () => {
               <h1 className="text-sm font-bold text-zinc-150 tracking-tight truncate">
                 AssetFlow
               </h1>
-              <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest block">
+              <span className="text-[9px] text-zinc-550 font-bold uppercase tracking-widest block">
                 Enterprise ERP
               </span>
             </motion.div>
