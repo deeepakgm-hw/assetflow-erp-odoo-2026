@@ -42,6 +42,13 @@ model User {
   notifications Notification[]
   activityLogs  ActivityLog[]
 
+  // Asset allocations and bookings relationships
+  assets        Asset[]           @relation("UserAssets")
+  allocations   Allocation[]
+  transfersFrom TransferRequest[] @relation("FromUserTransfers")
+  transfersTo   TransferRequest[] @relation("ToUserTransfers")
+  bookings      Booking[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -99,3 +106,83 @@ model ActivityLog {
 
   timestamp DateTime @default(now())
 }
+
+model Asset {
+  id                 String             @id
+  name               String
+  type               String             // e.g. "Laptop", "Monitor", etc.
+  serialNumber       String             @unique
+  specification      String
+  department         String
+  status             String             @default("Available") // "Available", "Allocated", "Overdue", "Maintenance"
+  currentHolderId    Int?
+  currentHolder      User?              @relation("UserAssets", fields: [currentHolderId], references: [id])
+  allocatedDate      DateTime?
+  expectedReturnDate DateTime?
+  allocations        Allocation[]
+  transfers          TransferRequest[]
+
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model Allocation {
+  id                 Int       @id @default(autoincrement())
+  assetId            String
+  asset              Asset     @relation(fields: [assetId], references: [id])
+  userId             Int
+  user               User      @relation(fields: [userId], references: [id])
+  allocatedDate      DateTime  @default(now())
+  returnedDate       DateTime?
+  expectedReturnDate DateTime?
+  conditionOnReturn  String?
+  notes              String?
+  status             String    // "Allocated", "Returned", "Overdue"
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model TransferRequest {
+  id             Int      @id @default(autoincrement())
+  assetId        String
+  asset          Asset    @relation(fields: [assetId], references: [id])
+  fromUserId     Int
+  fromUser       User     @relation("FromUserTransfers", fields: [fromUserId], references: [id])
+  toUserId       Int
+  toUser         User     @relation("ToUserTransfers", fields: [toUserId], references: [id])
+  reason         String
+  priority       String   // "Low", "Medium", "High"
+  status         String   @default("Pending") // "Pending", "Approved", "Rejected"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Resource {
+  id        String    @id
+  name      String
+  type      String    // "Room", "Vehicle", "Equipment"
+  capacity  String
+  location  String
+  status    String    @default("Available")
+  bookings  Booking[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Booking {
+  id         Int      @id @default(autoincrement())
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id])
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  date       DateTime // Date of the booking
+  startTime  String   // e.g. "09:00"
+  endTime    String   // e.g. "10:00"
+  purpose    String
+  status     String   // "Upcoming", "Ongoing", "Completed", "Cancelled"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+

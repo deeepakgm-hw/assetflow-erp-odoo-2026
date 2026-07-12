@@ -5,12 +5,16 @@ class EmployeesController {
   getAll = async (req, res, next) => {
     try {
       const { search, departmentId, role, page, limit } = req.query;
+      const pageInt = page ? parseInt(page, 10) : 1;
+      const limitInt = limit ? parseInt(limit, 10) : 10;
+      const departmentIdInt = departmentId ? parseInt(departmentId, 10) : undefined;
+
       const result = await employeesService.getAllEmployees({
         search,
-        departmentId,
+        departmentId: departmentIdInt,
         role,
-        page,
-        limit
+        page: pageInt,
+        limit: limitInt
       });
 
       return res.status(200).json({
